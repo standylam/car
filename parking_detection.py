@@ -84,17 +84,28 @@ def delete_parking_spot():
     save_parking_spots()  # 自动保存更新后的列表
 
 def main():
-    # 初始化摄像头
+    # 初始化摄像头（增加重试逻辑和延迟）
+    max_retries = 5
+    retry_delay = 1  # 秒
+    cap = None
     for i in range(3):  # 尝试多个摄像头索引
-        cap = cv2.VideoCapture(i)
-        if cap.isOpened():
-            cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1024)
-            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 768)
-            cv2.namedWindow("Parking Spot Detection")
-            print(f"摄像头 {i} 初始化成功")
+        for attempt in range(max_retries):
+            cap = cv2.VideoCapture(i)
+            if cap.isOpened():
+                cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1024)
+                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 768)
+                cv2.namedWindow("Parking Spot Detection")
+                print(f"摄像头 {i} 初始化成功（尝试次数：{attempt + 1}）")
+                break
+            else:
+                print(f"摄像头 {i} 初始化失败，尝试次数：{attempt + 1}/{max_retries}")
+                if attempt < max_retries - 1:
+                    import time
+                    time.sleep(retry_delay)
+        if cap and cap.isOpened():
             break
     else:
-        print("无法打开任何摄像头，请检查设备连接")
+        print("无法打开任何摄像头，请检查设备连接或权限")
         exit(1)
 
     # 读取一帧图像以初始化 frame
@@ -151,10 +162,13 @@ def main():
         # 显示结果
         cv2.imshow("Parking Spot Detection", frame_copy)
 
-        # 模拟车位占用报警（测试用）
-        if len(parking_spots) > 0 and not any(spot["available"] for spot in parking_spots):
+        # 强制触发报警状态（测试用）
+        if len(parking_spots) > 0:  # 临时移除条件，强制触发
             print("警告：车位被占用！")
-            cv2.putText(frame_copy, "警告：车位被占用！", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            # 直接使用英文显示报警文字
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            cv2.putText(frame_copy, "Warning: Spot Occupied!", (50, 50), font, 1, (0, 0, 255), 2)
+            cv2.putText(frame_copy, "Alert: Spot Occupied", (50, 100), font, 0.7, (0, 0, 255), 2)
             cv2.imshow("Parking Spot Detection", frame_copy)
             # 播放系统声音（仅限 macOS）
             import os
