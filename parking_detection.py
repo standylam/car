@@ -84,7 +84,7 @@ def delete_parking_spot():
     save_parking_spots()  # 自动保存更新后的列表
 
 def main():
-    # 初始化摄像头（增加重试逻辑和延迟）
+    # 初始化摄像头（增加重试逻辑和延迟，并设置帧率）
     max_retries = 5
     retry_delay = 1  # 秒
     cap = None
@@ -94,6 +94,7 @@ def main():
             if cap.isOpened():
                 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1024)
                 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 768)
+                cap.set(cv2.CAP_PROP_FPS, 30)  # 设置帧率为 30 FPS
                 cv2.namedWindow("Parking Spot Detection")
                 print(f"摄像头 {i} 初始化成功（尝试次数：{attempt + 1}）")
                 break
